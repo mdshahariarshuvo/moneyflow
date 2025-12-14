@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoneyFlow - Personal Finance Manager</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Top Status Bar -->
+        <header class="status-bar">
+            <div class="logo">
+                <i class="fa-solid fa-wallet"></i> MoneyFlow
+            </div>
+            <div class="balances-scroll-container">
+                <div class="balances" id="balances-list">
+                    <!-- Injected via JS -->
+                    <!-- Example: <div class="balance-item"><span>Cash</span> <strong>-44 BDT</strong></div> -->
+                </div>
+            </div>
+
+            <div class="header-actions" style="display:flex; gap:10px;">
+                <button class="theme-toggle-btn" onclick="openModal('settings')" title="Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button class="theme-toggle-btn" onclick="openAICoach()" title="AI Coach">
+                    <i class="fa-solid fa-robot"></i>
+                </button>
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Left/Center: Actions & Summary -->
+            <div class="main-content">
+                <div class="greeting">
+                    <h1>Dashboard</h1>
+                    <p>Manage your wealth efficiently.</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="action-btn deposit" onclick="openModal('deposit')">
+                        <div class="icon-box"><i class="fa-solid fa-arrow-down"></i></div>
+                        <span>Deposit</span>
+                    </button>
+                    <button class="action-btn expense" onclick="openModal('expense')">
+                        <div class="icon-box"><i class="fa-solid fa-arrow-up"></i></div>
+                        <span>Expense</span>
+                    </button>
+                    <button class="action-btn give-loan" onclick="openModal('give-loan')">
+                        <div class="icon-box"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <span>Give Loan</span>
+                    </button>
+                    <button class="action-btn get-loan" onclick="openModal('get-loan')">
+                        <div class="icon-box"><i class="fa-solid fa-hand-holding-hand"></i></div>
+                        <span>Get Loan</span>
+                    </button>
+                    <button class="action-btn transfer" onclick="openModal('transfer')">
+                        <div class="icon-box"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                        <span>Transfer</span>
+                    </button>
+                </div>
+
+                <!-- Recent History Preview -->
+                <div class="history-section">
+                    <div class="section-header">
+                        <h2>Recent Transactions</h2>
+                        <input type="text" id="recent-search" placeholder="Search ID, Name, Type..."
+                            class="search-input">
+                        <button class="view-all-btn" onclick="toggleHistoryView()">View All</button>
+                    </div>
+                    <div class="transaction-list" id="transaction-list">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="chart-section glass-panel">
+                    <div class="chart-header">
+                        <h3><i class="fa-solid fa-chart-pie"></i> Expense Analysis</h3>
+                        <div class="chart-view-toggles"
+                            style="display:flex; gap:5px; margin-right: auto; margin-left: 15px;">
+                            <button class="view-btn active" id="view-category-btn" onclick="switchChartView('category')"
+                                title="Category View"
+                                style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.1rem;"><i
+                                    class="fa-solid fa-chart-pie"></i></button>
+                            <button class="view-btn" id="view-date-btn" onclick="switchChartView('date')"
+                                title="Date View"
+                                style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.1rem;"><i
+                                    class="fa-solid fa-chart-column"></i></button>
+                        </div>
+
+                        <div class="chart-filter-buttons">
+                            <button class="chart-filter-btn active" data-period="all" onclick="filterChart('all')">All
+                                Time</button>
+                            <button class="chart-filter-btn" data-period="month" onclick="filterChart('month')">Last
+                                Month</button>
+                            <button class="chart-filter-btn" data-period="week" onclick="filterChart('week')">Last
+                                Week</button>
+                            <button class="chart-filter-btn" data-period="today"
+                                onclick="filterChart('today')">Today</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                    <div class="chart-total" id="chart-total">
+                        <strong>Total Expense:</strong> <span id="total-expense-amount">BDT 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Sidebar -->
+            <aside class="goal-section">
+                <!-- Goal Section (Moved from Header) -->
+                <div class="goal-card glass-panel">
+                    <div class="goal-header">
+                        <h3><i class="fa-solid fa-bullseye"></i> <span id="goal-name">Goal</span></h3>
+                        <button class="edit-goal-btn" onclick="openModal('edit-goal')"><i
+                                class="fa-solid fa-pen"></i></button>
+                    </div>
+                    <div class="goal-body">
+                        <div class="hg-progress-bg" style="margin-bottom: 10px;">
+                            <div class="hg-progress-fill" id="goal-progress"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.85rem; color:var(--text-secondary);" id="goal-status">Linked</span>
+                            <span class="hg-amount" id="goal-amount" style="font-size:1rem;">0 / 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loan Management Section -->
+                <div class="loan-section glass-panel" style="margin-top: 20px;">
+                    <div class="goal-header">
+                        <h3><i class="fa-solid fa-handshake"></i> Active Loans</h3>
+                    </div>
+                    <div id="loan-list" class="loan-list">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Participants Section -->
+                <div class="participants-card glass-panel" style="margin-top: 20px;">
+                    <div class="goal-header">
+                        <h3><i class="fa-solid fa-users"></i> Participants</h3>
+                        <button class="edit-goal-btn" onclick="addPerson()"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div class="participants-list" id="participants-list">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Data Management Section -->
+                <div class="data-section glass-panel" style="margin-top: 20px; text-align: center;">
+                    <div class="goal-header">
+                        <h3><i class="fa-solid fa-database"></i> Data</h3>
+                    </div>
+                    <button class="reset-btn" onclick="resetData()">
+                        <i class="fa-solid fa-trash"></i> Reset All Data
+                    </button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Full History View (Hidden by default) -->
+        <div id="full-history-view" class="hidden">
+            <div class="history-header">
+                <button class="back-btn" onclick="toggleHistoryView()"><i class="fa-solid fa-arrow-left"></i> Back to
+                    Dashboard</button>
+                <h2>All Transactions</h2>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar glass-panel"
+                style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                <div class="filter-group">
+                    <label>Type:</label>
+                    <select id="filter-type" onchange="renderFullHistory()">
+                        <option value="all">All</option>
+                        <option value="deposit">Deposit</option>
+                        <option value="expense">Expense</option>
+                        <option value="give-loan">Give Loan</option>
+                        <option value="get-loan">Get Loan</option>
+                        <option value="transfer">Transfer</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Category:</label>
+                    <select id="filter-category" onchange="renderFullHistory()">
+                        <option value="all">All</option>
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Sort By:</label>
+                    <select id="sort-order" onchange="renderFullHistory()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="highest">Highest Amount</option>
+                        <option value="lowest">Lowest Amount</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Account</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-history-list">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal glass-panel">
+            <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h2 id="modal-title">Action</h2>
+            <form id="transaction-form">
+                <!-- Dynamic Fields injected based on action -->
+                <div id="modal-fields"></div>
+                <button type="submit" class="submit-btn">Confirm</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receipt-modal-overlay" class="modal-overlay hidden" style="z-index: 1100;"
+        onclick="if(event.target === this) closeReceiptModal()">
+        <div class="receipt-modal-content">
+            <button class="close-modal-receipt" onclick="closeReceiptModal()"><i class="fa-solid fa-xmark"></i></button>
+
+            <div id="receipt-preview" class="receipt-paper">
+                <!-- Receipt Content Injected Here -->
+            </div>
+
+            <div class="receipt-actions">
+                <button class="receipt-btn print" onclick="printReceiptContent()">
+                    <i class="fa-solid fa-print"></i> Print
+                </button>
+                <button class="receipt-btn copy" onclick="copyReceiptAsJpg()">
+                    <i class="fa-solid fa-image"></i> Copy as JPG
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- AI Coach FAB -->
+    <button class="ai-coach-fab" onclick="openAICoach()" title="Ask AI Coach">
+        <i class="fa-solid fa-robot"></i>
+    </button>
+
+    <!-- AI Coach Modal -->
+    <!-- AI Coach Side Panel -->
+    <div id="ai-coach-panel" class="ai-side-panel">
+        <div class="ai-perplexity-container">
+            <!-- Header -->
+            <div class="ai-perplexity-header">
+                <button class="close-panel" onclick="closeAICoach()"><i class="fa-solid fa-xmark"></i></button>
+                <div class="ai-perplexity-logo">
+                    <div class="ai-logo-icon">
+                        <img src="perplexity-logo.png" alt="Perplexity AI"
+                            style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="ai-logo-text">
+                        <span class="ai-brand-name">MoneyFlow AI</span>
+                        <span class="ai-powered-by">Powered by Perplexity</span>
+                    </div>
+                </div>
+                <div class="ai-header-controls">
+                    <button onclick="startNewChat()" title="New Chat" class="ai-icon-btn">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                    <select id="ai-language-selector" class="ai-lang-select">
+                        <option value="Bangla" selected>বাং</option>
+                        <option value="English">EN</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chat Container -->
+            <div class="ai-perplexity-chat" id="ai-perplexity-chat">
+                <!-- Empty State (shown when no messages) -->
+                <div class="ai-empty-state" id="ai-empty-state">
+                    <h1 class="ai-main-question">What do you want to know?</h1>
+                    <p class="ai-subtitle">Ask me anything about your finances, or let me analyze your dashboard</p>
+                </div>
+
+                <!-- Messages Container (hidden initially) -->
+                <div class="ai-messages-container" id="chat-messages" style="display: none;">
+                    <!-- Messages will be injected here -->
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="ai-perplexity-input">
+                <div class="ai-input-wrapper">
+                    <input type="text" id="ai-user-input" placeholder="Ask anything..."
+                        onkeypress="if(event.key === 'Enter') sendAIMessage()">
+                    <div class="ai-input-actions">
+                        <button class="ai-action-btn" title="Search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                        <button class="ai-action-btn" title="Attach">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+                        <button onclick="sendAIMessage()" class="ai-send-btn">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
